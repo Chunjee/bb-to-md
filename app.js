@@ -1,56 +1,52 @@
-"use strict";
+//INCLUDES
+var converter = require('nodebb-plugin-bbcode-to-markdown'),
+    fs = require('fs'),
+    _ = require('lodash');
 
-var converter = {};
-
-
-
-function parseQuotes(content) {
-	var quote, quoteBlock,
-		re = /\[quote=?["]?([\s\S]*?)["]?\]([\s\S]*?)\[\/quote\]/gi;
-
-	while(quote = content.match(re)) {
-		quote = quote[0];
-		quoteBlock = quote.replace(re, '\n\n<div id="quote">$2</div><br>')
-		// .replace(/[\r\n]/g, '\n')
-
-		// SomethingAwful Customizations
-		// (none yet)
-		
-		// finalize block
-		content = content.replace(quote, quoteBlock);
-	}
-
-	return content;
-}
-
-converter.parse = function(postContent) {
-	postContent = postContent
-		.replace('&#58;', ':')
-		.replace(/\*/g, '\\*') //replace * with literal \*
-		.replace(/\[\S?color[\s\S]*?\]/gi, '') //colors are removed entirely
-		.replace(/\[\S?b[s\S]*?\]/gi, '**') //bolds
-		.replace(/\[\/?i\]/gi, '*') //italics
-		.replace(/\[\u\]/gi, '<u>') //underscore open
-		.replace(/\[\/u\]/gi, '</u>') //underscore close
-		.replace(/\[s\]/gi, '<s>') //strikethrough open
-		.replace(/\[\/s\]/gi, '</s>') //strikethrough open
-		// .replace(/\[quote:?[\s\S]*?\]([\s\S]*?)\[\/quote:[\s\S]*?\]/gi, '> $1')
-		.replace(/\[url=(https?:[\s\S]*?)\]([\s\S]*?)\[\/url\]/gi, '[$2]($1)') //urls
-		.replace(/\[\S?url[s\S]*?\]/gi, '') // [url]google.com[/url] non-pretty urls
-		.replace(/<!--[\s\S]*?href="([\s\S]*?)">([\s\S]*?)<[\s\S]*?-->/gi, '[$2]($1)') //commented urls?
+//GLOBAL VARS
+var dir_import = "\\posts\\";
+var dir_export = "\\markdown\\";
 
 
-		// SomethingAwful Customizations
-		.replace(/\[video.+?([\d]*).\]([\[a-zA-Z0-9]*)\[\/video\]/gi,'[youtube link](https:youtube.com/watch=$2&t=$1)')
-		.replace(/\[t*img\](.+?)\[\/t*img\]/gi,'<img src="$1">') //img and timg
-		.replace(/\[list\]/,'<ul>') //lists open
-		.replace(/\[\*\]([\s\w]+)/,'<li>$1</li>') //list item
-		.replace(/\[\/list\]/,'</ul>') //lists close
-		//emote customization
-		.replace(/\:(\w+)\:/gi,'<img src="/images/emotes/$1.gif" alt="$1 emote">')
 
-	postContent = parseQuotes(postContent);
-	return postContent
-};
+fs.readdir(process.cwd() + dir_import, function (err, files) {
+    if (err) {
+      console.error("Could not list the directory.", err);
+      process.exit(1);
+    }
+  
+    files.forEach(function (file, index) {
+        var post = {}
+        post.originalcontent = fs.readFileSync(process.cwd() + dir_import + file, 'utf8');
 
-module.exports = converter;
+        //grab some useful bits
+        post.title = post.originalcontent.split('\n')[0];
+        
+        //convert the post to markdown
+        post.markdown = converter.parse(post.originalcontent);
+
+        //remove some bits from the posts
+            //
+
+        //Build the post metadata
+        post.type = "Thread Recap"
+        post.tags = ["Thread Recap"];
+        // post.tags.push("")
+        post.date = "2018-01-01"
+
+        //write out to new file
+        if (post.title) {
+            console.log("writing " + post.title + " to file...")
+            fs.appendFileSync(process.cwd() + dir_export + file + ".md", post.markdown );
+        }
+    })
+});
+
+
+
+// converter.parse(post, function(i, posty) {
+//     console.log(i);
+//     console.log("###################")
+//     console.log(posty);
+//     fs.appendFileSync(process.cwd() + '/body.md', posty );
+// });
