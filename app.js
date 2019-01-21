@@ -17,29 +17,33 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
   
     files.forEach(function (file, index) {
         var post = {}
-        post.originalcontent = fs.readFileSync(process.cwd() + dir_import + file, 'utf8');
+        //extact from file to memory
+        post.rawfile = fs.readFileSync(process.cwd() + dir_import + file, 'utf8');
+        post.original = post.rawfile.split('}##')[1];
 
         //grab some useful bits
-        post.title = post.originalcontent.split('\n')[0];
-        
+        post.title = post.original.split('\n')[1].trim();
+        var dateregex = /\#\#([\w\W\n\r]+?)\#\#/g;
+        post.propertiesString = dateregex.exec(post.rawfile)[0].replace(/\#/g,"").trim(); //regex out the header and parse to a json object
+        post.properties = JSON.parse(post.propertiesString)
+
         //convert the post to markdown
-        post.markdown = converter.parse(post.originalcontent);
+        post.markdown = converter.parse(post.original);
 
         //remove some bits from the posts
             //
 
         //Build the post metadata
-        post.type = "Thread Recap"
+        post.type = "Thread Recap";
         post.tags = ["Thread Recap"];
         // post.tags.push("")
-        post.date = "2018-01-01"
 
         //write out to new file
         if (post.title) {
-            console.log("writing " + post.title + " to file...")
-            fs.appendFileSync(process.cwd() + dir_export + file + ".md", post.markdown );
+            console.log("writing " + post.title + " to file...");
+            fs.appendFileSync(process.cwd() + dir_export + post.properties.date + "-" + index + " " + post.title + ".md", post.markdown );
         }
-    })
+    });
 });
 
 
