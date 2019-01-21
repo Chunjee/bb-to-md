@@ -38,21 +38,13 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         //Build the post metadata
         post.type = "Thread Recap";
         post.tags = ["Thread Recap"];
+        post.header = '+++\ndate = "'+post.properties.date+'"\ntitle = "'+post.title+'"\n+++\n\n\n'
         // post.tags.push("")
 
         //write out to new file
         if (post.title) {
             console.log("writing " + post.title + " to file...");
-            fs.appendFileSync(process.cwd() + dir_export + post.properties.date + " " + index + post.title + ".md", post.markdown );
+            fs.appendFileSync(dir_export + post.properties.date + " " + index + post.title + ".md", post.header + post.markdown );
         }
     });
 });
-
-
-
-// converter.parse(post, function(i, posty) {
-//     console.log(i);
-//     console.log("###################")
-//     console.log(posty);
-//     fs.appendFileSync(process.cwd() + '/body.md', posty );
-// });
