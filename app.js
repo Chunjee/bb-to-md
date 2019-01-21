@@ -23,6 +23,8 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
 
         //grab some useful bits
         post.title = post.original.split('\n')[1].trim();
+        post.title = post.title.replace(/\[\S?b\]/g,"") //replace bbcode for BOLD
+        post.title = post.title.replace(/[\!\?]/g,"") //replace unsuitable filename characters
         var dateregex = /\#\#([\w\W\n\r]+?)\#\#/g;
         post.propertiesString = dateregex.exec(post.rawfile)[0].replace(/\#/g,"").trim(); //regex out the header and parse to a json object
         post.properties = JSON.parse(post.propertiesString)
@@ -41,7 +43,7 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         //write out to new file
         if (post.title) {
             console.log("writing " + post.title + " to file...");
-            fs.appendFileSync(process.cwd() + dir_export + post.properties.date + "-" + index + " " + post.title + ".md", post.markdown );
+            fs.appendFileSync(process.cwd() + dir_export + post.properties.date + " " + index + post.title + ".md", post.markdown );
         }
     });
 });
