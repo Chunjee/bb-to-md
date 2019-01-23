@@ -1,12 +1,13 @@
 //INCLUDES
 var converter = require('bbcode-to-markdown'),
+    // personalconverter = require('nodebb-plugin-bbcode-to-markdownMODIFIED'),
     fs = require('fs'),
     _ = require('lodash');
 
 //GLOBAL VARS
 var dir_import = "\\posts\\";
 var dir_export = "";
-
+// var dir_export = "\\markdown\\";
 
 
 fs.readdir(process.cwd() + dir_import, function (err, files) {
@@ -34,18 +35,21 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         var alll = post.original
         var all = [];
 
-        while (toplevelquote = alll.match(re)) {
+        // while (toplevelquote = alll.match(re)) {
 
-            oldstyle = toplevelquote[0].slice(0, -9).toString();
-            var convertedquote = converter(oldstyle);
-            // console.log(convertedquote);
-            alll = alll.replace(oldstyle, "")
-            // console.log(alll.length);
-            all.push(convertedquote)
-        }
-        console.log("finished converting" + file);
-        console.log(all.length);
+        //     oldstyle = toplevelquote[0].slice(0, -9).toString();
+        //     var convertedquote = converter(oldstyle);
+        //     // console.log(convertedquote);
+        //     alll = alll.replace(oldstyle, "")
+        //     // console.log(alll.length);
+        //     all.push(convertedquote)
+        // }
+        // console.log("finished converting" + file);
+        // console.log(all.length);
+
+        //save the markdown version
         post.markdown = all.join("\n\n<br>\n\n\n")
+        post.markdown = converter(post.original);
 
          //remove some bits from the posts
             //
@@ -53,8 +57,8 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         //Build the post metadata
         post.type = "Thread Recap";
         post.tags = ["Thread Recap"];
-        post.header = '+++\ndate = "'+post.properties.date+'"\ntitle = "'+post.title+'"\n+++\n\n\n'
         // post.tags.push("")
+        post.header = '+++\ndate = "'+post.properties.date+'"\ntitle = "'+post.title+'"\ncategories= '+JSON.stringify(["recap"]) +'\n+++\n\n\n'
 
         //write out to new file
         if (post.title) {
