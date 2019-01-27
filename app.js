@@ -1,12 +1,13 @@
 //INCLUDES
-var converter = require('nodebb-plugin-bbcode-to-markdown'),
+var converter = require('bbcode-to-markdown'),
+    personalconverter = require('nodebb-plugin-bbcode-to-markdown'),
     fs = require('fs'),
     _ = require('lodash');
 
 //GLOBAL VARS
 var dir_import = "\\posts\\";
-var dir_export = "\\markdown\\";
-
+var dir_export = "";
+// var dir_export = "\\markdown\\";
 
 
 fs.readdir(process.cwd() + dir_import, function (err, files) {
@@ -29,8 +30,31 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         post.propertiesString = dateregex.exec(post.rawfile)[0].replace(/\#/g,"").trim(); //regex out the header and parse to a json object
         post.properties = JSON.parse(post.propertiesString)
 
+
         //convert the post to markdown
-        post.markdown = converter.parse(post.original);
+        post.markdown = personalconverter.parse(post.original)
+        post.markdown = converter(post.markdown);
+        post.markdown = post.markdown.replace(/\[timg\]([\w\?\.\:\/\=\&]+)\[\/timg\]/gi,'<img src="$1" class="timg" alt="embedded external image">'); //timgs
+        post.markdown = post.markdown.replace(/\:([a-z0-9]{1,10})\:/gi,'<img src="/img/emotes/$1.gif" alt="$1 emote">') //emotes
+
+
+        //rename or remove posters to
+        var re = /\[quote=?["]?([\s\S]*?)\"\s.+?\]([\s\S]*?)\[quote\=\"/gi; //[1] is the username, [2] is the entire quote
+        var re = /\@(\w+)\:/gi;
+        var posters = ["Virtual Captain"]
+        var index = 0
+        console.log()
+        while (post_and_author = post.markdown.match(re) && index > 100) {
+            console.log(index)
+            index++;
+            if (posters.indexOf(post_and_author[1])) {
+                
+            } else {
+                var authorRegEx = new RegExp(post_and_author[1],"gi")
+                post.markdown.replace(authorRegEx, "")
+            }
+        }
+
 
         //remove some bits from the posts
             //
@@ -38,13 +62,31 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         //Build the post metadata
         post.type = "Thread Recap";
         post.tags = ["Thread Recap"];
-        post.header = '+++\ndate = "'+post.properties.date+'"\ntitle = "'+post.title+'"\n+++\n\n\n'
         // post.tags.push("")
+        if (!post.properties.bigimg) {
+            post.properties.bigimg = "/img/background.png"
+        }
+        if (!post.properties.salink) {
+            post.properties.salink = "https://forums.somethingawful.com/forumdisplay.php?forumid=212"
+        }
+
+        post.header = '+++\n'
+        + 'date = "' + post.properties.date + '"'
+        + '\ntitle = "' + post.title +'"' 
+        + '\ncategories= "' + JSON.stringify(["recap"]) + '"' 
+        + '\nbigimg = "' + post.properties.bigimg + '"'
+        + '\n+++\n\n\n'
+
+
+        //writeable file
+        post.tofile = post.header 
+        + post.markdown 
+        + '\n\n\n## [As Seen on SOMETHINGAWFULDOTCOM](' + post.properties.salink + ')'
 
         //write out to new file
         if (post.title) {
             console.log("writing " + post.title + " to file...");
-            fs.appendFileSync(dir_export + post.properties.date + " " + index + post.title + ".md", post.header + post.markdown );
+            fs.appendFileSync(dir_export + post.properties.date + " " + index + post.title + ".md", post.tofile );
         }
     });
 });
