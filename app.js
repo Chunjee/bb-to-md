@@ -39,13 +39,28 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
 
 
         //rename or remove posters to
+        
         var re = /\[quote=?["]?([\s\S]*?)\"\s.+?\]([\s\S]*?)\[quote\=\"/gi; //[1] is the username, [2] is the entire quote
-        var re = /\@(\w+)\:/gi;
-        var posters = ["Virtual Captain"]
+        // var re = /\@(\w+)\:/gi;
+        var postext_array = [] //post.original.split(re)
+        var posters_array = []
+        // console.log(postext_array)
+
+        var tempcopy = post.original; 
+        while (toplevelquote = tempcopy.match(re)) {
+            posters_array.push( toplevelquote[1] );
+            postext_array.push( toplevelquote[2] );
+
+            tempcopy = _.replace(tempcopy,toplevelquote[0],"")
+            console.log("parsing...")
+        }
+        console.log(posters_array)
+
+
+
         var index = 0
-        console.log()
         while (post_and_author = post.markdown.match(re) && index > 100) {
-            console.log(index)
+            console.log(index);
             index++;
             if (posters.indexOf(post_and_author[1])) {
                 
@@ -66,14 +81,16 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         if (!post.properties.bigimg) {
             post.properties.bigimg = "/img/background.png"
         }
-        if (!post.properties.salink) {
-            post.properties.salink = "https://forums.somethingawful.com/forumdisplay.php?forumid=212"
+        if (post.properties.postid) {
+            post.properties.postid = "https://forums.somethingawful.com/showthread.php?action=showpost&postid=" + post.properties.postid
+        } else {
+            post.properties.postid = "https://forums.somethingawful.com/forumdisplay.php?forumid=212";
         }
 
         post.header = '+++\n'
         + 'date = "' + post.properties.date + '"'
         + '\ntitle = "' + post.title +'"' 
-        + '\ncategories= "' + JSON.stringify(["recap"]) + '"' 
+        + '\ncategories = ' + JSON.stringify(post.tags) + '' 
         + '\nbigimg = "' + post.properties.bigimg + '"'
         + '\n+++\n\n\n'
 
@@ -83,6 +100,7 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         + post.markdown 
         + '\n\n\n## [As Seen on SOMETHINGAWFULDOTCOM](' + post.properties.salink + ')'
 
+        console.log(findLongestWords(post.markdown,8))
         //write out to new file
         if (post.title) {
             console.log("writing " + post.title + " to file...");
@@ -90,3 +108,23 @@ fs.readdir(process.cwd() + dir_import, function (err, files) {
         }
     });
 });
+
+
+
+function findLongestWords(str, numberOfResults) {
+    str = str.replace(/[^a-zA-Z0-9 ]/gi," ")
+    str = str.replace(/[0-9]{3,100}/gi," ")
+    var orderedArray = _.sortBy(_.uniq(str.split(" ")), 'length');
+    orderedArray = _.difference(orderedArray, posters_array);
+
+    return orderedArray.pop(8);
+
+    var filteredArray = [];
+    for (let index = 0; index < orderedArray.length; index++) {
+        if (index + 1 > numberOfResults) {
+            return filteredArray;
+        }
+        filteredArray.push(orderedArray.pop())
+    }
+	return filteredArray;
+}
